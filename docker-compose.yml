@@ -1,0 +1,26 @@
+services:
+  api:
+    image: sail-8.2/app
+    ports:
+      - '80:80'
+    environment:
+      - APP_URL=http://localhost
+    volumes:
+      - '.:/var/www/html'
+    networks:
+      - sail
+    depends_on:
+      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  redis:
+    image: redis:alpine
+    ports:
+      - '6379:6379'
+    networks:
+      - sail
+
+networks:
+  sail:
+    driver: bridge
