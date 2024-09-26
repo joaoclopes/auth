@@ -16,7 +16,11 @@ return new class extends Migration
             $table->string('name');
             $table->boolean('can_activate_user')->default(false);
             $table->json('personalized_messages')->nullable();
+            $table->boolean('multi_enterprise')->default(false);
+            $table->uuid('parent_id')->nullable();
             $table->timestamps();
+
+            $table->foreign('parent_id')->references('uuid')->on('enterprises')->onDelete('set null');
         });
     }
 

@@ -16,14 +16,14 @@ class LoginRequest extends FormRequest
         return [
             'login' => 'required|string|email|max:255',
             'ref' => 'required|string|max:255',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:8'
         ];
     }
 
     public function messages()
     {
         return [
-            'login.required' => 'O campo e-mail é obrigatório.',
+            'login.required' => 'O campo login é obrigatório.',
             'login.email' => 'Forneça um endereço de e-mail válido.',
             'login.max' => 'O e-mail não pode ter mais que 255 caracteres.',
             'ref.required' => 'O campo ref é obrigatório.',

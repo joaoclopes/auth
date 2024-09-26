@@ -17,7 +17,7 @@ class AuthController extends Controller
 
     }
 
-    public function register(StoreRequest $request)
+    public function store(StoreRequest $request)
     {
         try {
             if (!$request->validated()) {
@@ -27,7 +27,7 @@ class AuthController extends Controller
                 ], 400);
             }
 
-            $user = $this->userService->store($request->all());
+            $this->userService->store($request->all());
 
             return response()->json([
                 'success' => true,
