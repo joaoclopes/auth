@@ -18,8 +18,7 @@ class EnterpriseScope implements Scope
     public function apply(Builder $builder, Model $model)
     {
         $tenantsIds = $this->idEnterprise;
-
-        $builder->whereIn('enterprise_id', $tenantsIds);
+        $builder->whereIn('idInstituicao', $tenantsIds);
     }
 }
 

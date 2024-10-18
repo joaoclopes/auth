@@ -18,6 +18,7 @@ class MultipleUsersFoundException extends Exception
     public function render($request): JsonResponse
     {
         return response()->json([
+            'success' => true,
             'message' => $this->getMessage(),
             'users' => $this->users,
         ], 409);

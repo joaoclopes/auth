@@ -2,13 +2,17 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Enterprise;
-use App\Models\User;
 use Closure;
+use App\Models\Organization;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
 
 class TenantMiddleware
 {
+    public function __construct(protected AuthService $authService)
+    { 
+    }
+
     /**
      * Handle an incoming request.
      *
@@ -16,21 +20,11 @@ class TenantMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        $tenantId = $request->header('X-Tenant-ID');
-        $tenant = Enterprise::find($tenantId);
-        if (!$tenant->multi_enterprise) {
-            app()->singleton('enterpriseIds', function () use ($tenant) {
-                return [$tenant->uuid];
-            });
+        $tenantApiToken = $request->header('X-Tenant-ID');
+        $getTenantsIds = $this->authService->getTenantsId($tenantApiToken);
 
-            return $next($request);
-        }
-        $mainTenant = $tenant->headOffice()->first();
-        $parentTenants = $mainTenant->branches()->pluck('uuid')->toArray();
-        $allTenants = array_merge([$mainTenant->uuid], $parentTenants);
-
-        app()->singleton('enterpriseIds', function () use ($allTenants) {
-            return $allTenants;
+        app()->singleton('organizationIds', function () use ($getTenantsIds) {
+            return is_array($getTenantsIds) ? $getTenantsIds : [$getTenantsIds];
         });
 
         return $next($request);

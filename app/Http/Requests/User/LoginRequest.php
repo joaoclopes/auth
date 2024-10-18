@@ -14,9 +14,8 @@ class LoginRequest extends FormRequest
     public function rules()
     {
         return [
-            'login' => 'required|string|email|max:255',
+            'login' => 'required|string|max:255',
             'ref' => 'required|string|max:255',
-            'password' => 'required|string|min:8'
         ];
     }
 
@@ -24,12 +23,9 @@ class LoginRequest extends FormRequest
     {
         return [
             'login.required' => 'O campo login é obrigatório.',
-            'login.email' => 'Forneça um endereço de e-mail válido.',
             'login.max' => 'O e-mail não pode ter mais que 255 caracteres.',
             'ref.required' => 'O campo ref é obrigatório.',
             'ref.max' => 'A ref não pode ter mais que 255 caracteres.',
-            'password.required' => 'O campo senha é obrigatório.',
-            'password.min' => 'A senha deve ter no mínimo 8 caracteres.',
         ];
     }
 }
