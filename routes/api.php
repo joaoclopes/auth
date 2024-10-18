@@ -15,12 +15,12 @@ Route::prefix('auth')->group(function () {
     Route::post('/confirm', [AuthController::class, 'confirmEmail']);
 });
 
-Route::prefix('enterprise')->group(function () {
-    Route::post('/', [EnterpriseController::class, 'store']);
-});
-
 Route::prefix('form')->group(function () {
     Route::get('/', [FormController::class, 'getForm']);
+});
+
+Route::prefix('enterprise')->group(function () {
+    Route::post('/', [EnterpriseController::class, 'store']);
 });
 
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);

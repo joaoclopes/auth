@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Form;
+use Illuminate\Support\Facades\DB;
 
 class FormRepository
 {
@@ -35,5 +36,12 @@ class FormRepository
         ->orderBy('order')
         ->orderBy('card_order')
         ->get();
+    }
+
+    public function getPersonTypes()
+    {
+        return DB::table('pessoatipo')
+            ->select('id as value', 'texto as label')
+            ->get();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Date;
 use App\Enums\Telephone;
 use App\Repositories\FormRepository;
 use Illuminate\Database\Eloquent\Collection;
@@ -16,14 +17,13 @@ class FormService
     {
         $fields = $this->formRepository->getForm();
         $formattedForm = $this->formatForm($fields);
-        $encoded = json_encode($formattedForm);
-        dd(json_decode($encoded));
+        
+        return $this->recursiveToArray($formattedForm->toArray());
     }
 
     public function formatForm($fields)
     {
         $formattedForm = new Collection();
-
         foreach ($fields as $field) {
             if (!$formattedForm->has($field->card_order)) {
                 $formattedForm->put($field->card_order, [
@@ -32,36 +32,36 @@ class FormService
                 ]);
             }
 
+            if ($field->type == "select") {
+                $field = $this->setFieldOptions($field);
+            }
+
             $formattedForm->get($field->card_order)['fields']->push($this->formatField($field));
         }
 
-        // Transformando a coleção externa em array e as internas também
-        $formattedArray = json_encode($formattedForm);
-        dd(json_decode($formattedForm));
-
-        // Itera sobre cada item e transforma os fields em arrays
-        // foreach ($formattedArray as &$item) {
-        //     $item['fields'] = $item['fields']->toArray();
-        // }
-
-        return $formattedArray;
+        return $formattedForm;
     }
 
     public function formatField($field)
     {
-        $formattedField = $this->applyMaskToField($field);
-        return $this->setFieldConfigs($formattedField);
+        $field = $this->applyMaskToField($field);
+        $field = $this->setFieldOptions($field);
+        return $this->setFieldConfigs($field);
     }
 
     private function applyMaskToField($field)
     {
         $phones = array_map(fn($case) => $case->value, Telephone::cases());
+        $dates = array_map(fn($case) => $case->value, Date::cases());
         switch ($field->column) {
             case in_array($field->column, $phones):
                 $field->type = "phone";
                 return $field;
+            case in_array($field->column, $dates):
+                $field->mask = "99/99/9999";
+                return $field;
             case 'cpf':
-                $field->mask = '999.999.999-99';
+                $field->mask = "999.999.999-99";
                 return $field;
         }
         return $field;
@@ -90,5 +90,26 @@ class FormService
         }
 
         return $field;
+    }
+
+    public function setFieldOptions($field)
+    {
+        switch ($field->column) {
+            case 'idPessoaTipo':
+                dd($this->formRepository->getPersonTypes());
+        }
+    }
+
+    public function recursiveToArray($item)
+    {
+        if ($item instanceof \Illuminate\Support\Collection || $item instanceof \Illuminate\Database\Eloquent\Collection) {
+            return $item->map(fn($value) => $this->recursiveToArray($value))->toArray();
+        } elseif ($item instanceof \Illuminate\Database\Eloquent\Model) {
+            return $item->toArray();
+        } elseif (is_array($item)) {
+            return array_map(fn($value) => $this->recursiveToArray($value), $item);
+        }
+
+        return $item;
     }
 }
