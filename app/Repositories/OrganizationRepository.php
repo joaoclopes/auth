@@ -6,6 +6,11 @@ use App\Models\Organization;
 
 class OrganizationRepository
 {
+    public function getById($id)
+    {
+        return Organization::where('id', $id)->get();
+    }
+
     public function getByToken($token)
     {
         return Organization::where('apiToken', $token)->first();

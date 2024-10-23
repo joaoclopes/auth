@@ -26,6 +26,7 @@ class FormController extends Controller
                 'form' => array_values($form)
             ], 200);
         } catch(\Exception $e) {
+            dd($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Ocorreu um erro interno ao recuperar o formulario: ' . $e->getMessage()

@@ -5,11 +5,13 @@ namespace App\Services;
 use App\Enums\Date;
 use App\Enums\Telephone;
 use App\Repositories\FormRepository;
+use App\Repositories\OrganizationRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\App;
 
 class FormService
 {
-    public function __construct(protected FormRepository $formRepository)
+    public function __construct(protected FormRepository $formRepository, protected OrganizationRepository $orgRepository)
     {
     }
 
@@ -17,8 +19,8 @@ class FormService
     {
         $fields = $this->formRepository->getForm();
         $formattedForm = $this->formatForm($fields);
-        
-        return $this->recursiveToArray($formattedForm->toArray());
+
+        return $formattedForm->toArray();
     }
 
     public function formatForm($fields)
@@ -33,7 +35,7 @@ class FormService
             }
 
             if ($field->type == "select") {
-                $field = $this->setFieldOptions($field);
+                $field['options'] = $this->setFieldOptions($field);
             }
 
             $formattedForm->get($field->card_order)['fields']->push($this->formatField($field));
@@ -45,8 +47,8 @@ class FormService
     public function formatField($field)
     {
         $field = $this->applyMaskToField($field);
-        $field = $this->setFieldOptions($field);
-        return $this->setFieldConfigs($field);
+        $field = $this->setFieldConfigs($field);
+        return $field;
     }
 
     private function applyMaskToField($field)
@@ -70,7 +72,7 @@ class FormService
     private function setFieldConfigs($field)
     {
         $newConfig = [];
-        $config = json_decode($field->config);
+        $config = isset($field->config) ? json_decode($field->config) : null;
         unset($field->config);
         if ($field->required) {
             $newConfig['required'] = "Preencha o campo $field->label";
@@ -92,24 +94,66 @@ class FormService
         return $field;
     }
 
-    public function setFieldOptions($field)
+    private function translateOptions($options)
     {
-        switch ($field->column) {
-            case 'idPessoaTipo':
-                dd($this->formRepository->getPersonTypes());
+        $translatedOptions = [];
+        foreach ($options as $opt) {
+            if (is_array($opt)) {
+                array_push($translatedOptions, ['value' => $opt['value'], 'label' => __('select.' . $opt['label'])]);
+                continue;
+            }
+            array_push($translatedOptions, ['value' => $opt->value, 'label' => __('select.' . $opt->label)]);
         }
+
+        return $translatedOptions;
     }
 
-    public function recursiveToArray($item)
+    private function setFieldOptions($field)
     {
-        if ($item instanceof \Illuminate\Support\Collection || $item instanceof \Illuminate\Database\Eloquent\Collection) {
-            return $item->map(fn($value) => $this->recursiveToArray($value))->toArray();
-        } elseif ($item instanceof \Illuminate\Database\Eloquent\Model) {
-            return $item->toArray();
-        } elseif (is_array($item)) {
-            return array_map(fn($value) => $this->recursiveToArray($value), $item);
+        switch ($field->column) {
+            // Contempla apenas os selects que serao mostrados para o publico
+            case 'idPessoaTipo':
+                $options = $this->formRepository->getRegisterTypes();
+                break;
+            case 'idSexo':
+                $options = $this->formRepository->getGenderTypes();
+                break;
+            case 'idEstadoCivil':
+                return $this->formRepository->getRelationStatus();
+            case 'idEstadoReligioso':
+                $options = $this->formRepository->getReligiousStates();
+                break;
+            case 'tipoSanguineo':
+                return $this->formRepository->getBloodTypes();
+            case 'idEscolaridade':
+                $options = $this->formRepository->getSchoolingTypes();
+                break;
+            case 'idioma':
+                $options = $this->formRepository->getLanguages();
+                break;
+            case 'profissao':
+                return $this->formRepository->getProfessions();
+            case 'idTipoSugerido':
+                return $this->formRepository->getSugestedTypes();
+            case 'idTipoDocumento':
+                return $this->formRepository->getDocumentTypes();
+            case 'idEstadoUf':
+                return $this->formRepository->getStates();
+            case 'idPessoaDependente':
+                return $this->formRepository->getDependentPersonTypes();
+            case 'idOperadora':
+            case 'idOperadoraOutro':
+                return $this->formRepository->getOperatorContacts();
+            case 'idStatusPessoa':
+                return $this->formRepository->getPersonStatuses();
+            case 'idComoConheceu':
+                return $this->formRepository->getHowDoYouKnowTypes();
+            case 'idDom':
+                return $this->formRepository->getGifts();
+            case 'codigo2':
+                return $this->formRepository->getCode2Statuses();
         }
 
-        return $item;
+        return isset($options) ? $this->translateOptions($options) : [];
     }
 }
