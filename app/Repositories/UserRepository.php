@@ -25,10 +25,11 @@ class UserRepository
         return UserP::select(
             'pessoa.id',
             'pessoa.nome as name',
+            'pessoa.idInstituicao as org_id',
+            'pessoa.removido as inactive',
             'contato.telResidencial',
             'contato.telContato',
             'contato.email',
-            'pessoa.idInstituicao',
             'instituicao.nome as org_name'
         )
         ->join('instituicao', 'pessoa.idInstituicao', '=', 'instituicao.id')
@@ -42,7 +43,8 @@ class UserRepository
         return UserP::select(
             'pessoa.id',
             'pessoa.nome as name',
-            'pessoa.idInstituicao',
+            'pessoa.idInstituicao as org_id',
+            'pessoa.removido as inactive',
             'instituicao.nome as org_name',
             'contato.email',
             'contato.telResidencial',
@@ -62,7 +64,8 @@ class UserRepository
         return UserP::select(
             'pessoa.id',
             'pessoa.nome as name',
-            'pessoa.idInstituicao',
+            'pessoa.idInstituicao as org_id',
+            'pessoa.removido as inactive',
             'instituicao.nome as org_name',
             'contato.email',
             'contato.telResidencial',
@@ -79,7 +82,7 @@ class UserRepository
     {
         return UserP::join('instituicao as i', 'pessoa.idInstituicao', '=', 'i.id')
         ->join('contato as c', 'pessoa.idContato', '=', 'c.id')
-        ->select('pessoa.id', 'pessoa.nome', 'pessoa.idInstituicao', 'c.telResidencial', 'c.telContato', 'c.email', 'i.nome as org_name')
+        ->select('pessoa.id', 'pessoa.nome', 'pessoa.idInstituicao as org_id', 'pessoa.removido as inactive', 'c.telResidencial', 'c.telContato', 'c.email', 'i.nome as org_name')
         ->where('pessoa.cpf', $login)
         ->get();
     }
@@ -89,7 +92,8 @@ class UserRepository
         return UserP::select(
             'pessoa.id',
             'pessoa.nome',
-            'pessoa.idInstituicao',
+            'pessoa.idInstituicao as org_id',
+            'pessoa.removido as inactive',
             'c.telResidencial',
             'c.telContato',
             'c.email',

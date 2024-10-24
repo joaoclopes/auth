@@ -3,19 +3,24 @@
 namespace App\Services;
 
 use App\Enums\LoginRef;
+use App\Exceptions\InactiveUserException;
 use App\Exceptions\MultipleUsersFoundException;
+use App\Exceptions\OutdatedUserException;
 use App\Exceptions\UserNotFoundException;
 use App\Mail\SendCode;
+use App\Repositories\OrganizationRepository;
 use App\Repositories\UserRepository;
 use App\Utils\MaskUtils;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 
 class UserService
 {
-    public function __construct(protected AuthService $authService, protected UserRepository $userRepository)
+    public function __construct(
+        protected AuthService $authService,
+        protected UserRepository $userRepository,
+        protected OrganizationRepository $orgRepository
+    )
     {
 
     }
@@ -28,16 +33,27 @@ class UserService
     public function login($userData)
     {
         $user = $this->getUserByRef($userData['login'], $userData['ref']);
-
         if ($user->isEmpty()) {
             throw new UserNotFoundException();
         }
 
         if ($user->count() > 1) {
-            $formattedData = $this->formatDataToReturn($user);
-            throw new MultipleUsersFoundException($formattedData->toArray());
+            $user = $this->checkDuplicatedUser($user);
         }
-        return $this->generateHashAndSaveInCache($user->first());
+
+        $user = $user->first();
+        if ($user->inactive) {
+            $org = $this->orgRepository->getById($user->org_id);
+            if (!$org->can_active) throw new InactiveUserException();
+
+
+        }
+
+        if (!isset($user->email)) {
+            throw new OutdatedUserException();
+        }
+
+        return $this->generateHashAndSaveInCache($user);
     }
 
     public function getUserByRef($login, $ref)
@@ -54,6 +70,17 @@ class UserService
             default:
                 throw new UserNotFoundException();
         }
+    }
+
+    public function checkDuplicatedUser($user)
+    {
+        $user = $user->filter(function ($u) {
+            return $u->email !== null && !$u->inactive;
+        });
+
+        if ($user->count() < 2) return $user;
+        $formattedData = $this->formatDataToReturn($user);
+        throw new MultipleUsersFoundException($formattedData->toArray());
     }
 
     public function validateConfirmationCode($hash, $confirmationCode)
@@ -86,15 +113,6 @@ class UserService
         return $this->generateHashAndSaveInCache($user->first());
     }
 
-    private function checkIfUserIsInactiveAndCanRestore($user)
-    {
-        if (!$user->is_active) {
-
-        }
-
-        return true;
-    }
-
     private function generateHashAndSaveInCache($user)
     {
         $hash = Str::random(40);
@@ -115,7 +133,7 @@ class UserService
                 'telResidencial' => $this->maskOrReturn($user->telResidencial),
                 'telContato' => $this->maskOrReturn($user->telContato),
                 'email' => $this->maskOrReturnEmail($user->email),
-                'org_id' => $user->idInstituicao,
+                'org_id' => $user->org_id,
                 'org_name' => $user->org_name
             ];
         });
