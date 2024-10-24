@@ -46,7 +46,7 @@ class UserService
             $org = $this->orgRepository->getById($user->org_id);
             if (!$org->can_active) throw new InactiveUserException();
 
-
+            $this->userRepository->activeUserById($user->id);
         }
 
         if (!isset($user->email)) {

@@ -105,6 +105,11 @@ class UserRepository
         ->get();
     }
 
+    public function activeUserById($userId)
+    {
+        return UserP::where('id', $userId)->update(['removido' => 0]);
+    }
+
     public function saveUserDataInCache($redisKey, $user)
     {
         return Redis::setex($redisKey, 900, json_encode($user));
